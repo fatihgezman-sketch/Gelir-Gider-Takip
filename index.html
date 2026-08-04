@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="tr" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>PayBee - Kişisel Finans ve Varlık Yönetimi</title>
+
+    <!-- Mobile & PWA Meta Tags -->
+    <meta name="theme-color" content="#09090b" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PayBee" />
+    <meta name="application-name" content="PayBee" />
+    <meta name="description" content="Mobil odaklı, PWA destekli PayBee Kişisel Finans, Varlık, Hesap ve Bütçe Yönetim Uygulaması." />
+
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Inline PWA Web App Manifest -->
+    <link
+      rel="manifest"
+      href="data:application/manifest+json;utf8,%7B%22name%22%3A%22PayBee%20K%C2%A0s%C2%A0sel%20F%C2%A0nans%22%2C%22short_name%22%3A%22PayBee%22%2C%22start_url%22%3A%22%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2309090b%22%2C%22theme_color%22%3A%22%2309090b%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%253Csvg%2520xmlns%253D%2522http%253A%252F%252Fwww.w3.org%252F2000%252Fsvg%2522%2520viewBox%253D%25220%25200%2520512%2520512%2522%253E%253Crect%2520width%253D%2522512%2520512%2522%2520rx%253D%2522128%2522%2520fill%253D%2522%252309090b%2522%252F%253E%253Cpath%2520d%253D%2522M160%2520160h192v192H160z%2522%2520fill%253D%2522%2523fbbf24%2522%252F%253E%253C%252Fsvg%253E%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D"
+    />
+
+    <style>
+      body {
+        font-family: 'Helvetica Neue', Helvetica, Arial, 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+      /* Hide scrollbar for clean mobile UI */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+    </style>
+  </head>
+  <body class="bg-[#09090b] text-[#fafafa] antialiased selection:bg-amber-400 selection:text-zinc-950">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Inline Service Worker Registration for Mobile PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          const swCode = `
+            const CACHE_NAME = 'paybee-cache-v1';
+            self.addEventListener('install', (e) => {
+              e.waitUntil(self.skipWaiting());
+            });
+            self.addEventListener('activate', (e) => {
+              e.waitUntil(self.clients.claim());
+            });
+            self.addEventListener('fetch', (e) => {
+              e.respondWith(
+                caches.match(e.request).then((res) => res || fetch(e.request))
+              );
+            });
+          `;
+          const blob = new Blob([swCode], { type: 'text/javascript' });
+          const swUrl = URL.createObjectURL(blob);
+          navigator.serviceWorker.register(swUrl).catch(err => {
+            console.log('SW registration error:', err);
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

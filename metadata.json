@@ -1,0 +1,6 @@
+{
+  "name": "PayBee - Kişisel Finans ve Varlık Yönetimi",
+  "description": "Mobil odaklı, PWA destekli, gelişmiş kişisel finans, varlık, hesap, kart ve bütçe yönetim uygulaması.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
