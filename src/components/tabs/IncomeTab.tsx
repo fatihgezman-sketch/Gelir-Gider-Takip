@@ -1,76 +1,70 @@
 import React, { useState } from 'react';
-import { Plus, TrendingDown, CheckCircle2, AlertCircle, Trash2, CreditCard as CardIcon, Wallet, X } from 'lucide-react';
-import { BankAccount, CreditCard, ExpenseCategory, ExpenseItem } from '../../types';
+import { Plus, TrendingUp, CheckCircle2, Clock, Trash2, Calendar, Wallet, Filter, X } from 'lucide-react';
+import { BankAccount, IncomeCategory, IncomeItem } from '../../types';
 import { formatCurrency, formatDateTR } from '../../utils/storage';
 
-interface ExpenseTabProps {
-  expenses: ExpenseItem[];
+interface IncomeTabProps {
+  incomes: IncomeItem[];
   accounts: BankAccount[];
-  creditCards: CreditCard[];
-  onAddExpense: (item: Omit<ExpenseItem, 'id'>) => void;
-  onDeleteExpense: (id: string) => void;
-  onToggleExpenseStatus: (id: string) => void;
+  onAddIncome: (item: Omit<IncomeItem, 'id'>) => void;
+  onDeleteIncome: (id: string) => void;
+  onToggleIncomeStatus: (id: string) => void;
   currencySymbol: string;
 }
 
-const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  'Fatura',
-  'Kira',
-  'Mutfak/Market',
-  'Eğlence/Sosyalleşme',
-  'Borç/Kredi',
-  'Ulaşım',
-  'Abonelik',
-  'Banka İşlem Ücreti',
+const CATEGORIES: IncomeCategory[] = [
+  'Maaş',
+  'Yan Gelir',
+  'Prim/Bonus',
+  'Yatırım/Kâr',
+  'Kira Geliri',
   'Diğer',
 ];
 
-export const ExpenseTab: React.FC<ExpenseTabProps> = ({
-  expenses,
+export const IncomeTab: React.FC<IncomeTabProps> = ({
+  incomes,
   accounts,
-  creditCards,
-  onAddExpense,
-  onDeleteExpense,
-  onToggleExpenseStatus,
+  onAddIncome,
+  onDeleteIncome,
+  onToggleIncomeStatus,
   currencySymbol,
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'paid'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'received' | 'pending'>('all');
 
-  // Form state
+  // New Income Form State
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState<number>(0);
-  const [category, setCategory] = useState<ExpenseCategory>('Mutfak/Market');
-  const [dueDate, setDueDate] = useState<string>(new Date().toISOString().slice(0, 10));
-  const [status, setStatus] = useState<'paid' | 'unpaid'>('unpaid');
-  const [paymentSourceId, setPaymentSourceId] = useState<string>(accounts[0]?.id || '');
-  const [paymentSourceType, setPaymentSourceType] = useState<'account' | 'credit_card'>('account');
+  const [category, setCategory] = useState<IncomeCategory>('Maaş');
+  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [status, setStatus] = useState<'received' | 'pending'>('received');
+  const [targetAccountId, setTargetAccountId] = useState<string>(accounts[0]?.id || '');
   const [note, setNote] = useState('');
 
-  const filteredExpenses = expenses.filter((item) => {
+  const filteredIncomes = incomes.filter((item) => {
     if (statusFilter === 'all') return true;
     return item.status === statusFilter;
   });
 
-  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const paidTotal = expenses.filter((e) => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0);
-  const unpaidTotal = expenses.filter((e) => e.status === 'unpaid').reduce((sum, e) => sum + e.amount, 0);
+  const totalIncomes = incomes.reduce((sum, i) => sum + i.amount, 0);
+  const receivedTotal = incomes.filter((i) => i.status === 'received').reduce((sum, i) => sum + i.amount, 0);
+  const pendingTotal = incomes.filter((i) => i.status === 'pending').reduce((sum, i) => sum + i.amount, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || amount <= 0) return;
 
-    onAddExpense({
+    onAddIncome({
       title,
       amount,
       category,
-      dueDate,
+      date,
       status,
-      paymentSourceId,
-      paymentSourceType,
+      targetAccountId,
       note,
     });
 
+    // Reset Form
     setTitle('');
     setAmount(0);
     setNote('');
@@ -82,18 +76,19 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
       {/* Summary Header Cards */}
       <div className="grid grid-cols-2 gap-3">
         <div className="p-4 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ödenen Gider</span>
-          <p className="text-xl font-bold text-zinc-200 mt-1">{formatCurrency(paidTotal, currencySymbol)}</p>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Tahsil Edilen</span>
+          <p className="text-xl font-bold text-emerald-400 mt-1">{formatCurrency(receivedTotal, currencySymbol)}</p>
         </div>
 
         <div className="p-4 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-xl">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Ödenmeyen Borç</span>
-          <p className="text-xl font-bold text-rose-400 mt-1">{formatCurrency(unpaidTotal, currencySymbol)}</p>
+          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Bekleyen Gelir</span>
+          <p className="text-xl font-bold text-amber-400 mt-1">{formatCurrency(pendingTotal, currencySymbol)}</p>
         </div>
       </div>
 
-      {/* Filter and Add Action */}
+      {/* Actions & Filters */}
       <div className="flex items-center justify-between gap-2">
+        {/* Status Pills */}
         <div className="flex items-center gap-1 bg-zinc-900 p-1 rounded-2xl border border-zinc-800 text-xs font-bold">
           <button
             onClick={() => setStatusFilter('all')}
@@ -101,47 +96,47 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
               statusFilter === 'all' ? 'bg-amber-400 text-zinc-900 font-bold' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Tümü ({expenses.length})
+            Tümü ({incomes.length})
           </button>
           <button
-            onClick={() => setStatusFilter('unpaid')}
+            onClick={() => setStatusFilter('received')}
             className={`px-3 py-1.5 rounded-xl transition-colors ${
-              statusFilter === 'unpaid' ? 'bg-rose-500 text-white font-bold' : 'text-zinc-400 hover:text-white'
+              statusFilter === 'received' ? 'bg-emerald-500 text-white font-bold' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Ödenmeyen
+            Alındı
           </button>
           <button
-            onClick={() => setStatusFilter('paid')}
+            onClick={() => setStatusFilter('pending')}
             className={`px-3 py-1.5 rounded-xl transition-colors ${
-              statusFilter === 'paid' ? 'bg-emerald-500 text-white font-bold' : 'text-zinc-400 hover:text-white'
+              statusFilter === 'pending' ? 'bg-amber-500 text-zinc-900 font-bold' : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Ödendi
+            Bekleyen
           </button>
         </div>
 
+        {/* Add Button */}
         <button
           onClick={() => setIsFormOpen(true)}
           className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-900 text-xs font-bold flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
         >
-          <Plus className="w-4 h-4" /> Gider Ekle
+          <Plus className="w-4 h-4" /> Gelir Ekle
         </button>
       </div>
 
-      {/* Expense Items List */}
+      {/* Income Items List */}
       <div className="space-y-2.5">
-        {filteredExpenses.length === 0 ? (
+        {filteredIncomes.length === 0 ? (
           <div className="p-8 text-center rounded-3xl bg-zinc-900/50 border border-zinc-800 text-zinc-400">
-            <TrendingDown className="w-8 h-8 mx-auto text-zinc-600 mb-2" />
-            <p className="text-sm font-bold text-zinc-300">Henüz kaydedilmiş gider bulunmuyor</p>
-            <p className="text-xs text-zinc-500 mt-1">"Gider Ekle" butonunu kullanarak harcama veya fatura ekleyin.</p>
+            <TrendingUp className="w-8 h-8 mx-auto text-zinc-600 mb-2" />
+            <p className="text-sm font-bold text-zinc-300">Henüz kaydedilmiş gelir bulunmuyor</p>
+            <p className="text-xs text-zinc-500 mt-1">"Gelir Ekle" butonuna basarak yeni gelir ekleyebilirsiniz.</p>
           </div>
         ) : (
-          filteredExpenses.map((item) => {
-            const isPaid = item.status === 'paid';
-            const accountSource = item.paymentSourceType === 'account' ? accounts.find((a) => a.id === item.paymentSourceId) : null;
-            const cardSource = item.paymentSourceType === 'credit_card' ? creditCards.find((c) => c.id === item.paymentSourceId) : null;
+          filteredIncomes.map((item) => {
+            const isReceived = item.status === 'received';
+            const targetAcc = accounts.find((a) => a.id === item.targetAccountId);
 
             return (
               <div
@@ -151,10 +146,10 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold ${
-                      isPaid ? 'bg-zinc-800 text-zinc-400 border border-zinc-700/50' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                      isReceived ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                     }`}
                   >
-                    <TrendingDown className="w-5 h-5" />
+                    <TrendingUp className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
@@ -164,28 +159,27 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                       </span>
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-[11px] text-zinc-400">
-                      <span>Son Gün: {formatDateTR(item.dueDate)}</span>
-                      {accountSource && <span>• {accountSource.accountAlias}</span>}
-                      {cardSource && <span>• {cardSource.cardName}</span>}
+                      <span>{formatDateTR(item.date)}</span>
+                      {targetAcc && <span>• {targetAcc.accountAlias}</span>}
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-bold text-rose-400">{formatCurrency(item.amount, currencySymbol)}</p>
+                  <p className="text-sm font-bold text-emerald-400">{formatCurrency(item.amount, currencySymbol)}</p>
                   <div className="flex items-center justify-end gap-1.5 mt-1">
                     <button
-                      onClick={() => onToggleExpenseStatus(item.id)}
+                      onClick={() => onToggleIncomeStatus(item.id)}
                       className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border transition-all ${
-                        isPaid
-                          ? 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
-                          : 'bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20'
+                        isReceived
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
+                          : 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20'
                       }`}
                     >
-                      {isPaid ? '✓ Ödendi' : '⚡ Öde Yap'}
+                      {isReceived ? '✓ Alındı' : '⏳ Bekliyor'}
                     </button>
                     <button
-                      onClick={() => onDeleteExpense(item.id)}
+                      onClick={() => onDeleteIncome(item.id)}
                       className="text-zinc-500 hover:text-rose-400 p-1"
                       title="Sil"
                     >
@@ -199,13 +193,13 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
         )}
       </div>
 
-      {/* Add Expense Modal */}
+      {/* Add Income Modal */}
       {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-3xl p-6 shadow-2xl text-zinc-100 max-h-[90vh] overflow-y-auto space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-rose-400" /> Yeni Gider Kaydı
+                <TrendingUp className="w-4 h-4 text-emerald-400" /> Yeni Gelir Kaydı
               </h3>
               <button
                 onClick={() => setIsFormOpen(false)}
@@ -217,11 +211,11 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="text-xs font-bold text-zinc-300">Gider / Fatura Başlığı</label>
+                <label className="text-xs font-bold text-zinc-300">Gelir Başlığı</label>
                 <input
                   type="text"
                   required
-                  placeholder="Örn: Ev Kirası, Mutfak Alışverişi"
+                  placeholder="Örn: Aylık Maaş, Proje Hakedişi"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-100 text-sm focus:outline-none focus:border-amber-400 mt-1"
@@ -239,7 +233,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                     placeholder="0"
                     value={amount || ''}
                     onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-rose-400 font-bold text-base focus:outline-none focus:border-amber-400 mt-1"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-emerald-400 font-bold text-base focus:outline-none focus:border-amber-400 mt-1"
                   />
                 </div>
 
@@ -247,10 +241,10 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                   <label className="text-xs font-bold text-zinc-300">Kategori</label>
                   <select
                     value={category}
-                    onChange={(e) => setCategory(e.target.value as ExpenseCategory)}
+                    onChange={(e) => setCategory(e.target.value as IncomeCategory)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs font-semibold focus:outline-none focus:border-amber-400 mt-1"
                   >
-                    {EXPENSE_CATEGORIES.map((c) => (
+                    {CATEGORIES.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>
@@ -261,12 +255,12 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs font-bold text-zinc-300">Son Ödeme Tarihi</label>
+                  <label className="text-xs font-bold text-zinc-300">Tarih</label>
                   <input
                     type="date"
                     required
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-amber-400 mt-1"
                   />
                 </div>
@@ -278,77 +272,32 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                     onChange={(e) => setStatus(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs font-semibold focus:outline-none focus:border-amber-400 mt-1"
                   >
-                    <option value="unpaid">Ödenmedi (Ödeme Bekliyor)</option>
-                    <option value="paid">Ödendi (Düş/Borçlandır)</option>
+                    <option value="received">Alındı (Hesaba Ekle)</option>
+                    <option value="pending">Bekliyor (Tahsil Edilecek)</option>
                   </select>
                 </div>
               </div>
 
-              {/* Payment Source Type */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300">Ödeme Kaynağı Türü</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentSourceType('account');
-                      setPaymentSourceId(accounts[0]?.id || '');
-                    }}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      paymentSourceType === 'account'
-                        ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
-                        : 'border-zinc-800 bg-zinc-950 text-zinc-400'
-                    }`}
-                  >
-                    <Wallet className="w-3.5 h-3.5" /> Banka Hesabı
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentSourceType('credit_card');
-                      setPaymentSourceId(creditCards[0]?.id || '');
-                    }}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      paymentSourceType === 'credit_card'
-                        ? 'border-amber-400/50 bg-amber-400/10 text-amber-400'
-                        : 'border-zinc-800 bg-zinc-950 text-zinc-400'
-                    }`}
-                  >
-                    <CardIcon className="w-3.5 h-3.5" /> Kredi Kartı
-                  </button>
-                </div>
-              </div>
-
-              {/* Specific Source Selector */}
               <div>
-                <label className="text-xs font-bold text-zinc-300">
-                  {paymentSourceType === 'account' ? 'Seçili Banka Hesabı' : 'Seçili Kredi Kartı'}
-                </label>
+                <label className="text-xs font-bold text-zinc-300">Aktarılacak Banka Hesabı</label>
                 <select
-                  value={paymentSourceId}
-                  onChange={(e) => setPaymentSourceId(e.target.value)}
+                  value={targetAccountId}
+                  onChange={(e) => setTargetAccountId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs font-semibold focus:outline-none focus:border-amber-400 mt-1"
                 >
-                  {paymentSourceType === 'account'
-                    ? accounts.map((acc) => (
-                        <option key={acc.id} value={acc.id}>
-                          {acc.bankName} - {acc.accountAlias} ({formatCurrency(acc.currentBalance, currencySymbol)})
-                        </option>
-                      ))
-                    : creditCards.map((card) => (
-                        <option key={card.id} value={card.id}>
-                          {card.cardName} (**** {card.lastFourDigits}) - Borç: {formatCurrency(card.currentDebt, currencySymbol)}
-                        </option>
-                      ))}
+                  {accounts.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.bankName} - {acc.accountAlias} ({formatCurrency(acc.currentBalance, currencySymbol)})
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300">Not / Açıklama</label>
+                <label className="text-xs font-bold text-zinc-300">Not (Opsiyonel)</label>
                 <input
                   type="text"
-                  placeholder="Opsiyonel açıklama"
+                  placeholder="Ek açıklama"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-200 text-xs focus:outline-none focus:border-amber-400 mt-1"
@@ -359,7 +308,7 @@ export const ExpenseTab: React.FC<ExpenseTabProps> = ({
                 type="submit"
                 className="w-full py-3.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-900 font-bold text-sm shadow-md active:scale-98 transition-transform mt-2"
               >
-                Gider Kaydet
+                Gelir Kaydet
               </button>
             </form>
           </div>
